@@ -16,20 +16,14 @@ class Dataset:
             
             if file.name.lower().endswith(".txt"):
                 textDataset = self.loadFile("text", str(file), context)
-                datasets.append(textDataset["train"])
+                self.__loadTextDataset(textDataset, datasets, tokenizer)
                 
             elif file.name.lower().endswith(".json") or file.name.lower().endswith(".jsonl"):
                 qaDataset = self.loadFile("json", str(file), context)
                 if "text" in qaDataset['train'].features:
-                    datasets.append(qaDataset["train"])
+                    self.__loadTextDataset(qaDataset, datasets, tokenizer)
                 elif "question" in qaDataset['train'].features and "answer" in qaDataset['train'].features:
-                    def datasetChatEncoder(record):
-                        chat = (
-                            {"role": "user", "content": f"{record['question']}"},
-                            {"role": "assistant", "content": f"{record['answer']}"},
-                        )
-                        return {"text": tokenizer.apply_chat_template(chat, continue_final_message = True, tokenize = False)}
-                    datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=("question", "answer"))["train"])
+                    self.__loadQaDataset(qaDataset, datasets, tokenizer)
                 else:
                     print("Cannot load dataset, json dataset neither contains 'text' nor 'question', 'answer'")
         
@@ -51,3 +45,17 @@ class Dataset:
         print(dataset)
         
         return dataset
+    
+    def __loadTextDataset(self, textDataset, datasets, tokenizer):
+        def datasetTextEncoder(record):
+            return {"text": record['text'] + tokenizer.eos_token}
+        datasets.append(textDataset.map(datasetTextEncoder)["train"])
+
+    def __loadQaDataset(self, qaDataset, datasets, tokenizer):
+        def datasetChatEncoder(record):
+            chat = (
+                {"role": "user", "content": f"{record['question']}"},
+                {"role": "assistant", "content": f"{record['answer']}"},
+            )
+            return {"text": tokenizer.apply_chat_template(chat, continue_final_message = True, tokenize = False)}
+        datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=("question", "answer"))["train"])
