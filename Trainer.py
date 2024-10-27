@@ -36,7 +36,7 @@ class Trainer:
                     else:
                         continueTraining = False
                 
-                print(f"Total training runs: {cnt} epochs {cnt * context.trEpochs}")
+                print(f"Total training runs: {cnt} epochs {cnt * (context.trEpochs or 1)}")
                 
             finally:
                 if vInplace:
@@ -76,6 +76,8 @@ class Trainer:
             sftArgs["fp16"] = True
         else:
             sftArgs["bf16"] = True
+        if context.trEpochs:
+            sftArgs["num_train_epochs"] = context.trEpochs
         if context.trMaxSeqLength:
             sftArgs["max_seq_length"] = context.trMaxSeqLength
         if context.trPerDeviceTrainBatchSize:
@@ -90,9 +92,12 @@ class Trainer:
             sftArgs["group_by_length"] = context.trGroupByLength
         if context.trPacking:
             sftArgs["packing"] = context.trPacking
+        if context.trOptim:
+            sftArgs["optim"] = context.trOptim
+        if context.trSchedulerType:
+            sftArgs["lr_scheduler_type"] = context.trSchedulerType
         sftConfig = SFTConfig(
                 dataset_text_field="text",
-                num_train_epochs = context.trEpochs,
                 output_dir=context.locWorkdir,
                 save_strategy="no",
                 #neftune_noise_alpha=5,

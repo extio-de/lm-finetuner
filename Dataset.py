@@ -16,12 +16,12 @@ class Dataset:
             
             if file.name.lower().endswith(".txt"):
                 textDataset = self.loadFile("text", str(file), context)
-                self.__loadTextDataset(textDataset, datasets, tokenizer, context)
+                datasets.append(textDataset["train"])
                 
             elif file.name.lower().endswith(".json") or file.name.lower().endswith(".jsonl"):
                 qaDataset = self.loadFile("json", str(file), context)
                 if "text" in qaDataset['train'].features:
-                    self.__loadTextDataset(qaDataset, datasets, tokenizer, context)
+                    datasets.append(qaDataset["train"])
                 elif "question" in qaDataset['train'].features and "answer" in qaDataset['train'].features:
                     def datasetChatEncoder(record):
                         chat = (
@@ -51,14 +51,3 @@ class Dataset:
         print(dataset)
         
         return dataset
-    
-    def __loadTextDataset(self, textDataset, datasets, tokenizer, context: Context):
-        if not context.trTextDsToChat or context.trTextDsKeepPlainText:
-            datasets.append(textDataset["train"])
-        if context.trTextDsToChat:
-            def datasetChatEncoder(record):
-                chat = (
-                    {"role": "assistant", "content": f"{record['text']}"},
-                )
-                return {"text": tokenizer.apply_chat_template(chat, continue_final_message = True, tokenize = False)}
-            datasets.append(textDataset.map(datasetChatEncoder)["train"])

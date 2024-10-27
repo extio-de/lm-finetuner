@@ -18,8 +18,6 @@ class Context:
     
     train: bool
     storeAdapter: bool
-    trTextDsToChat: bool
-    trTextDsKeepPlainText: bool
     trEpochs: int
     trMaxSeqLength: int
     trPerDeviceTrainBatchSize: int
@@ -28,6 +26,8 @@ class Context:
     trGradientCheckpointing: bool
     trGroupByLength: bool
     trPacking: bool
+    trOptim : str
+    trSchedulerType: str
     
     loraR: int
     loraAlpha: int
@@ -66,9 +66,7 @@ class Context:
         
         self.train = cfg.get("Trainer", "train").lower() == "true"
         self.storeAdapter = cfg.get("Trainer", "storeAdapter").lower() == "true"
-        self.trTextDsToChat = cfg.get("Trainer", "trTextDsToChat").lower() == "true"
-        self.trTextDsKeepPlainText = cfg.get("Trainer", "trTextDsKeepPlainText").lower() == "true"
-        self.trEpochs = int(cfg.get("Trainer", "trEpochs") or "0") or 1
+        self.trEpochs = int(cfg.get("Trainer", "trEpochs") or "0") or None
         self.trMaxSeqLength = int(cfg.get("Trainer", "trMaxSeqLength") or "0") or None
         self.trPerDeviceTrainBatchSize = int(cfg.get("Trainer", "trPerDeviceTrainBatchSize") or "0") or None
         self.trFindAutoBatchSize = cfg.get("Trainer", "trFindAutoBatchSize").lower() == "true" 
@@ -76,6 +74,8 @@ class Context:
         self.trGradientCheckpointing = cfg.get("Trainer", "trGradientCheckpointing").lower() == "true" 
         self.trGroupByLength = cfg.get("Trainer", "trGroupByLength").lower() == "true"
         self.trPacking = cfg.get("Trainer", "trPacking").lower() == "true"
+        self.trOptim = cfg.get("Trainer", "trOptim") or None
+        self.trSchedulerType = cfg.get("Trainer", "trSchedulerType") or None
         
         self.loraR = int(cfg.get("Lora", "loraR") or "0") or 64
         self.loraAlpha = int(cfg.get("Lora", "loraAlpha") or "0") or 16
