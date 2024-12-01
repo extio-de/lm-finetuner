@@ -10,12 +10,18 @@ class Merger:
         if not context.storeAdapter:
             raise Exception("Configuration problem: mergeFull requires storeAdapter")
         
-        print("Reloading original model on CPU")
-        baseModel = ModelLoader().load(context.locBaseModel, True, False, context)
+        print("Reloading model")
+        baseModel = ModelLoader().load(context.locBaseModel, False, True, context)
         peftModel = PeftModel.from_pretrained(baseModel, context.locAdapter)
         
         print("Merging")
         mergedModel = peftModel.merge_and_unload()
+        
+        print("Dequantize")
+        try:
+            mergedModel = mergedModel.dequantize()
+        except:
+            pass
         
         print("Storing model")
         mergedModel.save_pretrained(save_directory = context.locFull)

@@ -8,7 +8,7 @@ from transformers import (
 
 class ModelLoader:
     def load(self, path: str, forceCpu: bool, q4OnGpu: bool, context: Context):
-        q4 = q4OnGpu and context.accel and not forceCpu
+        q4 = context.qLora and q4OnGpu and context.accel and not forceCpu
         
         bbConfig = BitsAndBytesConfig(
            load_in_4bit=True,
@@ -27,5 +27,7 @@ class ModelLoader:
                 trust_remote_code=True)
         if not forceCpu:
             baseModel = baseModel.to(context.device)
+        
+        print(baseModel)
         
         return baseModel

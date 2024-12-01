@@ -67,8 +67,8 @@ class Trainer:
                 lora_alpha = context.loraAlpha,
                 lora_dropout = context.loraDropout,
                 bias = context.loraBias,
-                task_type = context.loraTaskType
-                #target_modules=["q_proj", "k_proj", "v_proj", "out_proj", "fc_in", "fc_out", "wte"],
+                task_type = context.loraTaskType,
+                target_modules=context.loraLayers
         )
         
         sftArgs = {}

@@ -29,11 +29,13 @@ class Context:
     trOptim : str
     trSchedulerType: str
     
+    qLora : bool
     loraR: int
     loraAlpha: int
     loraDropout: float
     loraBias: str
     loraTaskType: str
+    loraLayers: list
     
     validate: bool
     vInplace: bool
@@ -77,11 +79,13 @@ class Context:
         self.trOptim = cfg.get("Trainer", "trOptim") or None
         self.trSchedulerType = cfg.get("Trainer", "trSchedulerType") or None
         
+        self.qLora = cfg.get("Lora", "qLora").lower() == "true"
         self.loraR = int(cfg.get("Lora", "loraR") or "0") or 64
         self.loraAlpha = int(cfg.get("Lora", "loraAlpha") or "0") or 16
         self.loraDropout = float(cfg.get("Lora", "loraDropout") or "0") or 0.1
         self.loraBias = cfg.get("Lora", "loraBias") or "none"
         self.loraTaskType = cfg.get("Lora", "loraTaskType") or "CAUSAL_LM"
+        self.loraLayers = (cfg.get("Lora", "loraLayers") or "q_proj,k_proj").split(",")
         
         self.validate = cfg.get("Validation", "validate").lower() == "true"
         self.vInplace = cfg.get("Validation", "vInplace").lower() == "true"
