@@ -57,5 +57,5 @@ class Dataset:
                 {"role": "user", "content": f"{record['question']}"},
                 {"role": "assistant", "content": f"{record['answer']}"},
             )
-            return {"text": tokenizer.apply_chat_template(chat, continue_final_message = True, tokenize = False)}
+            return {"text": tokenizer.apply_chat_template(chat, add_generation_prompt = False, tokenize = False)}
         datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=("question", "answer"))["train"])
