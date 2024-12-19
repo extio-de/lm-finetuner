@@ -22,7 +22,7 @@ class Dataset:
                 qaDataset = self.loadFile("json", str(file), context)
                 if "text" in qaDataset['train'].features:
                     self.__loadTextDataset(qaDataset, datasets, tokenizer)
-                elif "question" in qaDataset['train'].features and "answer" in qaDataset['train'].features:
+                elif "history" in qaDataset['train'].features or "instruct" in qaDataset['train'].features or "completion" in qaDataset['train'].features or "question" in qaDataset['train'].features or "answer" in qaDataset['train'].features:
                     self.__loadQaDataset(qaDataset, datasets, tokenizer)
                 else:
                     print("Cannot load dataset, json dataset neither contains 'text' nor 'question', 'answer'")
@@ -53,9 +53,31 @@ class Dataset:
 
     def __loadQaDataset(self, qaDataset, datasets, tokenizer):
         def datasetChatEncoder(record):
-            chat = (
-                {"role": "user", "content": f"{record['question']}"},
-                {"role": "assistant", "content": f"{record['answer']}"},
-            )
+            chat = []
+            try:
+                if record["history"]:
+                    chat.append({"role": "assistant", "content": f"{record['history']}"})
+            except KeyError:
+                pass
+            try:
+                if record["question"]:
+                    chat.append({"role": "user", "content": f"{record['question']}"})
+            except KeyError:
+                pass
+            try:
+                if record["instruct"]:
+                    chat.append({"role": "user", "content": f"{record['instruct']}"})
+            except KeyError:
+                pass
+            try:
+                if record["answer"]:
+                    chat.append({"role": "assistant", "content": f"{record['answer']}"})
+            except KeyError:
+                pass
+            try:
+                if record["completion"]:
+                    chat.append({"role": "assistant", "content": f"{record['completion']}"})
+            except KeyError:
+                pass
             return {"text": tokenizer.apply_chat_template(chat, add_generation_prompt = False, tokenize = False)}
-        datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=("question", "answer"))["train"])
+        datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=qaDataset.column_names["train"])["train"])
