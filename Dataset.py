@@ -23,7 +23,7 @@ class Dataset:
                 if "text" in qaDataset['train'].features:
                     self.__loadTextDataset(qaDataset, datasets, tokenizer)
                 elif "history" in qaDataset['train'].features or "instruct" in qaDataset['train'].features or "completion" in qaDataset['train'].features or "question" in qaDataset['train'].features or "answer" in qaDataset['train'].features:
-                    self.__loadQaDataset(qaDataset, datasets, tokenizer)
+                    self.__loadQaDataset(qaDataset, datasets, tokenizer, context)
                 else:
                     print("Cannot load dataset, json dataset neither contains 'text' nor 'question', 'answer'")
         
@@ -48,10 +48,15 @@ class Dataset:
     
     def __loadTextDataset(self, textDataset, datasets, tokenizer):
         def datasetTextEncoder(record):
-            return {"text": record['text'] + tokenizer.eos_token}
+            return tokenizer(record["text"])
         datasets.append(textDataset.map(datasetTextEncoder)["train"])
 
-    def __loadQaDataset(self, qaDataset, datasets, tokenizer):
+    def __loadQaDataset(self, qaDataset, datasets, tokenizer, context):
+        customChatTemplate = None
+        if context.locCustomPromptTemplate != None:
+            with open(context.locCustomPromptTemplate, 'r') as file:
+                customChatTemplate = file.read()
+        
         def datasetChatEncoder(record):
             chat = []
             try:
@@ -79,5 +84,9 @@ class Dataset:
                     chat.append({"role": "assistant", "content": f"{record['completion']}"})
             except KeyError:
                 pass
-            return {"text": tokenizer.apply_chat_template(chat, add_generation_prompt = False, tokenize = False)}
+            
+            if context.showChatTemplate:
+                print(tokenizer.apply_chat_template(chat, chat_template = customChatTemplate, add_generation_prompt = False, tokenize = False, return_dict = False))
+            
+            return tokenizer.apply_chat_template(chat, chat_template = customChatTemplate, add_generation_prompt = False, tokenize = True, return_dict = True)
         datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=qaDataset.column_names["train"])["train"])

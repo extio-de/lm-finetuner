@@ -7,6 +7,7 @@ class Context:
     accel: bool
     device: str
     purgeTargetDirectories: bool
+    showChatTemplate: bool
     
     locBaseModel: str
     locDataset: str
@@ -15,6 +16,7 @@ class Context:
     locFull: str
     locValidation: str
     locGraderModel: str
+    locCustomPromptTemplate: str
     
     train: bool
     storeAdapter: bool
@@ -57,6 +59,7 @@ class Context:
         self.accel = torch.cuda.is_available() and cfg.get("Operation", "device") != "cpu"
         self.device = (cfg.get("Operation", "device") if self.accel else "cpu") or "cpu"
         self.purgeTargetDirectories = cfg.get("Operation", "purgeTargetDirectories").lower() == "true"
+        self.showChatTemplate = cfg.get("Operation", "showChatTemplate").lower() == "true"
         
         self.locBaseModel = cfg.get("Trainer", "locBaseModel")
         self.locDataset = cfg.get("Trainer", "locDataset")
@@ -65,6 +68,7 @@ class Context:
         self.locFull = cfg.get("Merger", "locFull")
         self.locValidation = cfg.get("Validation", "locValidation")
         self.locGraderModel = cfg.get("Validation", "locGraderModel")
+        self.locCustomPromptTemplate = cfg.get("Trainer", "locCustomPromptTemplate") or None
         
         self.train = cfg.get("Trainer", "train").lower() == "true"
         self.storeAdapter = cfg.get("Trainer", "storeAdapter").lower() == "true"

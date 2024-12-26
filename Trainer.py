@@ -97,10 +97,10 @@ class Trainer:
         if context.trSchedulerType:
             sftArgs["lr_scheduler_type"] = context.trSchedulerType
         sftConfig = SFTConfig(
-                dataset_text_field="text",
                 output_dir=context.locWorkdir,
                 save_strategy="no",
                 #neftune_noise_alpha=5,
+                dataset_kwargs={'skip_prepare_dataset': True},
                 **sftArgs
         )
         
