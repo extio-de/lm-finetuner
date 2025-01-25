@@ -3,6 +3,9 @@ import pathlib
 from Context import Context
 from datasets import load_dataset, concatenate_datasets
 
+from datasets import disable_caching
+disable_caching()
+
 class Dataset:
     def scan(self, location: str, tokenizer, context: Context):
         print(f"Scanning dataset directory {location}")
@@ -55,40 +58,33 @@ class Dataset:
     def __loadTextDataset(self, textDataset, datasets, tokenizer):
         def datasetTextEncoder(record):
             return tokenizer(record["text"])
-        datasets.append(textDataset.map(datasetTextEncoder)["train"])
+        datasets.append(textDataset.map(datasetTextEncoder, remove_columns="text")["train"])
     
     def __loadQaDataset(self, qaDataset, datasets, tokenizer, customChatTemplate, context):
-        def datasetChatEncoder(record):
-            chat = []
-            try:
-                if record["history"]:
-                    chat.append({"role": "assistant", "content": f"{record['history']}"})
-            except KeyError:
-                pass
-            try:
-                if record["question"]:
-                    chat.append({"role": "user", "content": f"{record['question']}"})
-            except KeyError:
-                pass
-            try:
-                if record["instruct"]:
-                    chat.append({"role": "user", "content": f"{record['instruct']}"})
-            except KeyError:
-                pass
-            try:
-                if record["answer"]:
-                    chat.append({"role": "assistant", "content": f"{record['answer']}"})
-            except KeyError:
-                pass
-            try:
-                if record["completion"]:
-                    chat.append({"role": "assistant", "content": f"{record['completion']}"})
-            except KeyError:
-                pass
-            
-            return self.__format(chat, tokenizer, customChatTemplate, context)
+        MAPPING = {"history": "assistant",
+                   "question": "user",
+                   "instruct": "user",
+                   "answer": "assistant",
+                   "completion": "assistant"}
         
-        datasets.append(qaDataset.map(datasetChatEncoder, remove_columns=qaDataset.column_names["train"])["train"])
+        def datasetChatEncoder(batch):
+            inputIds = []
+            attentionMask = []
+            size = len(list(batch.values())[0])
+            columns = [x for x in MAPPING.keys() if x in batch]
+            
+            for i in range(size):
+                chat = []
+                for column in columns:
+                    chat.append({"role": MAPPING[column], "content": batch[column][i]})
+                
+                encoded = self.__format(chat, tokenizer, customChatTemplate, context)
+                inputIds.append(encoded['input_ids'])
+                attentionMask.append(encoded['attention_mask'])
+            
+            return {"input_ids": inputIds, "attention_mask": attentionMask}
+        
+        datasets.append(qaDataset.map(datasetChatEncoder, batched = True, batch_size = 250, num_proc = 4, remove_columns=qaDataset.column_names["train"])["train"])
     
     def __loadConversationDataset(self, qaDataset, datasets, tokenizer, customChatTemplate, context):
         def datasetConversationEncoder(batch):
@@ -114,7 +110,7 @@ class Dataset:
                 attentionMask.append(encoded['attention_mask'])
             return {"input_ids": inputIds, "attention_mask": attentionMask}
         
-        datasets.append(qaDataset.map(datasetConversationEncoder, batched = True, remove_columns=qaDataset.column_names["train"])["train"])
+        datasets.append(qaDataset.map(datasetConversationEncoder, batched = True, batch_size = 250, num_proc = 4, remove_columns=qaDataset.column_names["train"])["train"])
     
     def __format(self, chat, tokenizer, customChatTemplate, context):
         if context.showChatTemplate:
