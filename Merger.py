@@ -7,15 +7,17 @@ class Merger:
     def mergeAndStore(self, context: Context):
         if not context.mergeFull:
             return
-        if not context.storeAdapter:
-            raise Exception("Configuration problem: mergeFull requires storeAdapter")
         
-        print("Reloading model")
-        baseModel = ModelLoader().load(context.locBaseModel, False, True, context)
-        peftModel = PeftModel.from_pretrained(baseModel, context.locAdapter)
+        if not context.model: 
+            if not context.storeAdapter:
+                raise Exception("Configuration problem: mergeFull requires storeAdapter")
+            
+            print("Loading model")
+            baseModel = ModelLoader().load(context.locBaseModel, False, True, context)
+            context.model = PeftModel.from_pretrained(baseModel, context.locAdapter)
         
         print("Merging")
-        mergedModel = peftModel.merge_and_unload()
+        mergedModel = context.model.merge_and_unload()
         
         print("Dequantize")
         try:

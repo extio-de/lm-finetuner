@@ -1,9 +1,12 @@
 import configparser
 import torch
 
+from peft import PeftModel
 from sympy.printing import str
 
 class Context:
+    model: PeftModel
+    
     accel: bool
     device: str
     purgeTargetDirectories: bool

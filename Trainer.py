@@ -16,42 +16,36 @@ class Trainer:
         
         baseModel = ModelLoader().load(context.locBaseModel, False, True, context)
         sftTrainer = self.__createTrainer(baseModel, context)
-        try:
-            vInplace = context.validate and context.vInplace
-            validator = None
-            if vInplace:
-                validator = Validator()
-            
-            try:
-                cnt = 0
-                continueTraining = True
-                while continueTraining:
-                    cnt += 1
-                    print(f"Training run {cnt}")
-                    
-                    self.__train(sftTrainer)
-                    
-                    if vInplace:
-                        continueTraining = not validator.validateInPlace(sftTrainer.tokenizer, sftTrainer.model, context)
-                    else:
-                        continueTraining = False
-                
-                print(f"Total training runs: {cnt} epochs {cnt * (context.trEpochs or 1)}")
-                
-            finally:
-                if vInplace:
-                    print(f"Validation statistics:\n{validator.statistics}")
-                    validator.unload(context)
-            
-            if context.storeAdapter:
-                self.__storeAdapter(sftTrainer, context)
+        context.model = sftTrainer.model
         
+        vInplace = context.validate and context.vInplace
+        validator = None
+        if vInplace:
+            validator = Validator()
+        
+        try:
+            cnt = 0
+            continueTraining = True
+            while continueTraining:
+                cnt += 1
+                print(f"Training run {cnt}")
+                
+                self.__train(sftTrainer)
+                
+                if vInplace:
+                    continueTraining = not validator.validateInPlace(sftTrainer.tokenizer, sftTrainer.model, context)
+                else:
+                    continueTraining = False
+            
+            print(f"Total training runs: {cnt} epochs {cnt * (context.trEpochs or 1)}")
+            
         finally:
-            del sftTrainer
-            del baseModel
-            gc.collect()
-            if context.accel:
-                torch.cuda.empty_cache()
+            if vInplace:
+                print(f"Validation statistics:\n{validator.statistics}")
+                validator.unload(context)
+        
+        if context.storeAdapter:
+            self.__storeAdapter(sftTrainer, context)
         
     def __createTrainer(self, baseModel, context: Context):
         tokenizer = AutoTokenizer.from_pretrained(
