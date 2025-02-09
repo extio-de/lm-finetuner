@@ -23,12 +23,12 @@ class Dataset:
             
             if file.name.lower().endswith(".txt"):
                 textDataset = self.loadFile("text", str(file), context)
-                self.__loadTextDataset(textDataset, datasets, tokenizer)
+                self.__loadTextDataset(textDataset, datasets, tokenizer, context)
                 
             elif file.name.lower().endswith(".json") or file.name.lower().endswith(".jsonl"):
                 qaDataset = self.loadFile("json", str(file), context)
                 if "text" in qaDataset['train'].features:
-                    self.__loadTextDataset(qaDataset, datasets, tokenizer)
+                    self.__loadTextDataset(qaDataset, datasets, tokenizer, context)
                 elif "history" in qaDataset['train'].features or "instruct" in qaDataset['train'].features or "completion" in qaDataset['train'].features or "question" in qaDataset['train'].features or "answer" in qaDataset['train'].features:
                     self.__loadQaDataset(qaDataset, datasets, tokenizer, customChatTemplate, context)
                 elif "conversation" in qaDataset['train'].features:
@@ -55,10 +55,20 @@ class Dataset:
         
         return dataset
     
-    def __loadTextDataset(self, textDataset, datasets, tokenizer):
-        def datasetTextEncoder(record):
-            return tokenizer(record["text"])
-        datasets.append(textDataset.map(datasetTextEncoder, remove_columns="text")["train"])
+    def __loadTextDataset(self, textDataset, datasets, tokenizer, context):
+        def datasetTextEncoder(batch):
+            inputIds = []
+            attentionMask = []
+            size = len(list(batch.values())[0])
+            limit = context.trMaxSeqLength - 20
+            for i in range(size):
+                encoded = tokenizer(batch["text"][i])
+                inputIds.extend([encoded['input_ids'][chunk:chunk + limit] for chunk in range(0, len(encoded['input_ids']), limit)])
+                attentionMask.extend([encoded['attention_mask'][chunk:chunk + limit] for chunk in range(0, len(encoded['attention_mask']), limit)])
+            
+            return {"input_ids": inputIds, "attention_mask": attentionMask}
+        
+        datasets.append(textDataset.map(datasetTextEncoder, batched = True, batch_size = 250, num_proc = 4, remove_columns="text")["train"])
     
     def __loadQaDataset(self, qaDataset, datasets, tokenizer, customChatTemplate, context):
         MAPPING = {"history": "assistant",

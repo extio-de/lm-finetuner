@@ -77,6 +77,8 @@ class Context:
         self.storeAdapter = cfg.get("Trainer", "storeAdapter").lower() == "true"
         self.trEpochs = int(cfg.get("Trainer", "trEpochs") or "0") or None
         self.trMaxSeqLength = int(cfg.get("Trainer", "trMaxSeqLength") or "0") or None
+        if not self.trMaxSeqLength:
+            raise Exception("trMaxSeqLength is not configured")
         self.trPerDeviceTrainBatchSize = int(cfg.get("Trainer", "trPerDeviceTrainBatchSize") or "0") or None
         self.trFindAutoBatchSize = cfg.get("Trainer", "trFindAutoBatchSize").lower() == "true" 
         self.trGradientAccSteps = int(cfg.get("Trainer", "trGradientAccSteps") or "0") or None
