@@ -39,7 +39,7 @@ class Dataset:
         if len(datasets) == 0:
             raise Exception("No datasets have been found. Check configuration")
         
-        return concatenate_datasets(datasets)
+        return concatenate_datasets(datasets).shuffle(seed = 4711)
     
     def loadFile(self, type_: str, path: str, context: Context, **kwargs):
         return self.__load(type_, context, data_files=path, **kwargs)
